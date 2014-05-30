@@ -1,5 +1,6 @@
 .PHONY: clean all
 
+LIBRARY_NAME = Analysis
 SWITCH = -g
 
 ROOTCFLAGS   := $(shell root-config --cflags)
@@ -8,15 +9,15 @@ INCLUDES      = -Iinclude
 CPP           = g++
 CFLAGS	      = -pedantic -Wall -Wno-long-long -D_FILE_OFFSET_BITS=64 -MMD -O3 \
                    $(ROOTCFLAGS) $(INCLUDES) $(SWITCH)
-LIBS  =  $(ROOTLIBS) -Lbin -lAnalysis -Wl,-rpath,\$ORIGIN
+LIBS  =  $(ROOTLIBS) -Lbin -l$(LIBRARY_NAME) -Wl,-rpath,\$ORIGIN
 
 EXECUTABLES = $(addprefix bin/,$(basename $(wildcard *.cc)))
 O_FILES = $(addsuffix .o,$(addprefix build/,$(basename $(notdir $(wildcard src/*.cc)))))
 DICT_O_FILES = build/Dictionary.o
 
-all: $(EXECUTABLES) bin/libAnalysis.so
+all: $(EXECUTABLES) bin/lib$(LIBRARY_NAME).so
 
-bin/%: %.cc | bin/libAnalysis.so bin
+bin/%: %.cc | bin/lib$(LIBRARY_NAME).so bin
 	@echo "Compiling $@"
 	@$(CPP) $(CFLAGS) $(LIBS) $< $(filter %.o,$^) -o $@
 
@@ -28,7 +29,7 @@ build:
 	@echo "Making build directory"
 	@mkdir $@
 
-bin/libAnalysis.so:  $(O_FILES) $(DICT_O_FILES) | bin
+bin/lib$(LIBRARY_NAME).so:  $(O_FILES) $(DICT_O_FILES) | bin
 	@echo "Making $@"
 	@$(CPP) $(CFLAGS) -fPIC -shared -Wl,-soname,$@ -o $@ $^ -lc
 

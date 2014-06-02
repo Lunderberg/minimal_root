@@ -1,4 +1,5 @@
 .PHONY: clean all
+.SECONDARY:
 
 LIBRARY_NAME = Analysis
 SWITCH = -g
@@ -17,9 +18,9 @@ DICT_O_FILES = build/Dictionary.o
 
 all: $(EXECUTABLES) bin/lib$(LIBRARY_NAME).so
 
-bin/%: %.cc | bin/lib$(LIBRARY_NAME).so bin
+bin/%: build/%.o | bin/lib$(LIBRARY_NAME).so bin
 	@echo "Compiling $@"
-	@$(CPP) $(CFLAGS) $(LIBS) $< $(filter %.o,$^) -o $@
+	@$(CPP) $(CFLAGS) $(LIBS) $< -o $@
 
 bin:
 	@echo "Making bin directory"
@@ -35,19 +36,24 @@ bin/lib$(LIBRARY_NAME).so:  $(O_FILES) $(DICT_O_FILES) | bin
 
 -include $(wildcard build/*.d)
 
-build/%.o: src/%.cc include/%.hh | build
-	@echo "Compiling $@"
-	@$(CPP) -fPIC $(CFLAGS) -c $< -o $@
+define OBJ_COMMANDS
+@echo "Compiling $@"
+@$(CPP) -fPIC $(CFLAGS) -c $< -o $@
+endef
 
+build/%.o: %.cc | build
+	$(OBJ_COMMANDS)
+build/%.o: src/%.cc include/%.hh | build
+	$(OBJ_COMMANDS)
 build/Dictionary.o: build/Dictionary.cc build/Dictionary.h | build
-	@echo "Compiling $@"
-	@$(CPP) -fPIC $(CFLAGS) -c $< -o $@
+	$(OBJ_COMMANDS)
 
 build/Dictionary.cc: $(wildcard include/*.hh) include/LinkDef.h | build
 	@echo "Building $@"
 	@rootcint -f $@ -c $(SWITCH) $(INCLUDES) $(ROOTCFLAGS) $(notdir $^)
 build/Dictionary.h: build/Dictionary.cc
 	@echo "Confirming $@"
+	@touch $@
 
 clean:
 	@echo "Cleaning up"

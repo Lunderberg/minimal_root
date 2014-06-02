@@ -9,10 +9,10 @@ INCLUDES      = -Iinclude
 CPP           = g++
 CFLAGS	      = -pedantic -Wall -Wno-long-long -D_FILE_OFFSET_BITS=64 -MMD -O3 \
                    $(ROOTCFLAGS) $(INCLUDES) $(SWITCH)
-LIBS  =  $(ROOTLIBS) -Lbin -l$(LIBRARY_NAME) -Wl,-rpath,\$ORIGIN
+LIBS  =  $(ROOTLIBS) -Lbin -l$(LIBRARY_NAME) -Wl,-rpath,\$$ORIGIN
 
-EXECUTABLES = $(addprefix bin/,$(basename $(wildcard *.cc)))
-O_FILES = $(addsuffix .o,$(addprefix build/,$(basename $(notdir $(wildcard src/*.cc)))))
+EXECUTABLES = $(patsubst %.cc,bin/%,$(wildcard *.cc))
+O_FILES = $(patsubst src/%.cc,build/%.o,$(wildcard src/*.cc))
 DICT_O_FILES = build/Dictionary.o
 
 all: $(EXECUTABLES) bin/lib$(LIBRARY_NAME).so
@@ -31,7 +31,7 @@ build:
 
 bin/lib$(LIBRARY_NAME).so:  $(O_FILES) $(DICT_O_FILES) | bin
 	@echo "Making $@"
-	@$(CPP) $(CFLAGS) -fPIC -shared -Wl,-soname,$@ -o $@ $^ -lc
+	@$(CPP) $(CFLAGS) -fPIC -shared -o $@ $^
 
 -include $(wildcard build/*.d)
 

@@ -1,67 +1,72 @@
 .PHONY: clean all
 .SECONDARY:
 
+# EDIT THIS SECTION
+LIBRARY_NAME = Analysis
+
+INCLUDES  = include
+CPP       = g++
+CFLAGS    = -pedantic -Wall -Wno-long-long -D_FILE_OFFSET_BITS=64 -O3
+LINKFLAGS =
+
+# EVERYTHING PAST HERE SHOULD WORK AUTOMATICALLY
+
+INCLUDES  := $(addprefix -I,$(INCLUDES))
+CFLAGS    += $(shell root-config --cflags)
+CFLAGS    += -MMD $(INCLUDES)
+LINKFLAGS += $(shell root-config --glibs) -lSpectrum
+LINKFLAGS += -Lbin -l$(LIBRARY_NAME) -Wl,-rpath,\$$ORIGIN
+
+EXE_O_FILES = $(patsubst %.cc,build/%.o,$(wildcard *.cc))
+EXECUTABLES = $(patsubst build/%.o,bin/%,$(EXE_O_FILES))
+
+SOURCES = $(shell find -name "*.cc")
+ALL_O_FILES = $(patsubst ./%.cc,build/%.o,$(SOURCES))
+LIB_O_FILES = $(filter-out $(EXE_O_FILES),$(ALL_O_FILES)) build/Dictionary.o
+
 USING_ROOT_6 = $(shell expr $(shell root-config --version | cut -f1 -d.) \>= 6)
 ifeq ($(USING_ROOT_6),1)
 	EXTRAS=bin/Dictionary_rdict.pcm
 endif
 
-LIBRARY_NAME = Analysis
-SWITCH = -g
-
-ROOTCFLAGS   := $(shell root-config --cflags)
-ROOTLIBS     := $(shell root-config --glibs) -lSpectrum
-INCLUDES      = -Iinclude
-CPP           = g++
-CFLAGS	      = -pedantic -Wall -Wno-long-long -D_FILE_OFFSET_BITS=64 -MMD -O3 \
-                   $(ROOTCFLAGS) $(INCLUDES) $(SWITCH)
-LIBS  =  $(ROOTLIBS) -Lbin -l$(LIBRARY_NAME) -Wl,-rpath,\$$ORIGIN
-
-EXECUTABLES = $(patsubst %.cc,bin/%,$(wildcard *.cc))
-O_FILES = $(patsubst src/%.cc,build/%.o,$(wildcard src/*.cc))
-DICT_O_FILES = build/Dictionary.o
-
-all: $(EXECUTABLES) bin/lib$(LIBRARY_NAME).so $(EXTRAS)
+all: $(EXECUTABLES) $(EXTRAS)
 
 bin/%: build/%.o | bin/lib$(LIBRARY_NAME).so bin
 	@echo "Compiling $@"
-	@$(CPP) $< -o $@ $(CFLAGS) $(LIBS)
+	@$(CPP) $< -o $@ $(LINKFLAGS)
 
 bin:
-	@echo "Making bin directory"
-	@mkdir $@
+	@echo "Making $@ directory"
+	@mkdir -p $@
 
-build:
-	@echo "Making build directory"
-	@mkdir $@
-
-bin/lib$(LIBRARY_NAME).so:  $(O_FILES) $(DICT_O_FILES) | bin
+bin/lib$(LIBRARY_NAME).so:  $(LIB_O_FILES) | bin
 	@echo "Making $@"
-	@$(CPP) -fPIC -shared -o $@ $^ $(CFLAGS)
+	@$(CPP) -fPIC -shared -o $@ $^
 
--include $(wildcard build/*.d)
+build/%.o: %.cc
+	@echo "Compiling $@"
+	@mkdir -p $(dir $@)
+	@$(CPP) -fPIC -c $< -o $@ $(CFLAGS)
 
-define OBJ_COMMANDS
-@echo "Compiling $@"
-@$(CPP) -fPIC -c $< -o $@ $(CFLAGS)
-endef
+build/Dictionary.o: build/Dictionary.cc
+	@echo "Compiling $@"
+	@mkdir -p $(dir $@)
+	@$(CPP) -fPIC -c $< -o $@ $(CFLAGS)
 
-build/%.o: %.cc | build
-	$(OBJ_COMMANDS)
-build/%.o: src/%.cc include/%.hh | build
-	$(OBJ_COMMANDS)
-build/Dictionary.o: build/Dictionary.cc | build
-	$(OBJ_COMMANDS)
-
-build/Dictionary.cc: $(wildcard include/*.hh) include/LinkDef.h | build
+build/Dictionary.cc: $(wildcard include/*.hh) include/LinkDef.h
 	@echo "Building $@"
-	@rootcint -f $@ -c $(SWITCH) $(INCLUDES) $(ROOTCFLAGS) $(notdir $^)
+	@mkdir -p build
+	@rootcint -f $@ -c $(INCLUDES) $(ROOTCFLAGS) $(notdir $^)
+
 build/Dictionary_rdict.pcm: build/Dictionary.cc
 	@echo "Confirming $@"
 	@touch $@
-bin/Dictionary_rdict.pcm: build/Dictionary_rdict.pcm
+
+bin/Dictionary_rdict.pcm: build/Dictionary_rdict.pcm | bin
 	@echo "Placing $@"
 	@cp $< $@
+
+-include $(wildcard build/*.d)
 
 clean:
 	@echo "Cleaning up"

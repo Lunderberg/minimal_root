@@ -24,6 +24,11 @@ SOURCES = $(shell find -name "*.cc")
 ALL_O_FILES = $(patsubst ./%.cc,build/%.o,$(SOURCES))
 LIB_O_FILES = $(filter-out $(EXE_O_FILES),$(ALL_O_FILES)) build/Dictionary.o
 
+USING_ROOT_6 = $(shell expr $(shell root-config --version | cut -f1 -d.) \>= 6)
+ifeq ($(USING_ROOT_6),1)
+	EXTRAS=bin/Dictionary_rdict.pcm
+endif
+
 all: $(EXECUTABLES) $(EXTRAS)
 
 bin/%: build/%.o | bin/lib$(LIBRARY_NAME).so bin
@@ -52,6 +57,14 @@ build/Dictionary.cc: $(wildcard include/*.hh) include/LinkDef.h
 	@echo "Building $@"
 	@mkdir -p build
 	@rootcint -f $@ -c $(INCLUDES) $(ROOTCFLAGS) $(notdir $^)
+
+build/Dictionary_rdict.pcm: build/Dictionary.cc
+	@echo "Confirming $@"
+	@touch $@
+
+bin/Dictionary_rdict.pcm: build/Dictionary_rdict.pcm | bin
+	@echo "Placing $@"
+	@cp $< $@
 
 -include $(shell find build -name '*.d' 2> /dev/null)
 

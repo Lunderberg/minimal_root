@@ -5,7 +5,7 @@
 LIBRARY_NAME = Analysis
 
 INCLUDES  = include
-CPP       = g++
+CXX       = g++
 CFLAGS    = -pedantic -Wall -Wno-long-long -D_FILE_OFFSET_BITS=64 -O3
 LINKFLAGS =
 
@@ -33,7 +33,7 @@ all: $(EXECUTABLES) $(EXTRAS)
 
 bin/%: build/%.o | bin/lib$(LIBRARY_NAME).so bin
 	@echo "Compiling $@"
-	@$(CPP) $< -o $@ $(LINKFLAGS)
+	@$(CXX) $< -o $@ $(LINKFLAGS)
 
 bin:
 	@echo "Making $@ directory"
@@ -41,17 +41,17 @@ bin:
 
 bin/lib$(LIBRARY_NAME).so:  $(LIB_O_FILES) | bin
 	@echo "Making $@"
-	@$(CPP) -fPIC -shared -o $@ $^
+	@$(CXX) -fPIC -shared -o $@ $^
 
 build/%.o: %.cc
 	@echo "Compiling $@"
 	@mkdir -p $(dir $@)
-	@$(CPP) -fPIC -c $< -o $@ $(CFLAGS)
+	@$(CXX) -fPIC -c $< -o $@ $(CFLAGS)
 
 build/Dictionary.o: build/Dictionary.cc
 	@echo "Compiling $@"
 	@mkdir -p $(dir $@)
-	@$(CPP) -fPIC -c $< -o $@ $(CFLAGS)
+	@$(CXX) -fPIC -c $< -o $@ $(CFLAGS)
 
 build/Dictionary.cc: $(wildcard include/*.hh) include/LinkDef.h
 	@echo "Building $@"

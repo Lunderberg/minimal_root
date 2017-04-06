@@ -1,0 +1,14 @@
+language: cpp
+
+sudo: false
+
+os: linux
+dist: trusty
+compiler: gcc
+
+install:
+  - wget https://root.cern.ch/download/root_v6.09.02.Linux-ubuntu14-x86_64-gcc4.8.tar.gz
+  - tar -xzf root_v6.09.02.Linux-ubuntu14-x86_64-gcc4.8.tar.gz
+  - source root/bin/thisroot.sh
+
+script: make
